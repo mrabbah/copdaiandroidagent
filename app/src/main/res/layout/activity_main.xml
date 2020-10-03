@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="30sp"
+    tools:context=".MainActivity">
+
+
+    <LinearLayout
+        android:id="@+id/Accelerometer"
+        android:layout_width="300sp"
+        android:layout_height="100sp"
+        android:orientation="horizontal">
+
+
+        <TextView
+            android:id="@+id/xValue"
+            android:layout_width="100sp"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/yValue"
+            android:layout_width="100sp"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/zValue"
+            android:layout_width="100sp"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/Gyroscope"
+        android:layout_width="300sp"
+        android:layout_height="100sp"
+        android:orientation="horizontal">
+
+
+        <TextView
+            android:id="@+id/xGyroValue"
+            android:layout_width="100sp"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/yGyroValue"
+            android:layout_width="100sp"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/zGyroValue"
+            android:layout_width="100sp"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/Rotation"
+        android:layout_width="300sp"
+        android:layout_height="100sp"
+        android:orientation="horizontal">
+
+
+        <TextView
+            android:id="@+id/xRotationValue"
+            android:layout_width="100sp"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/yRotationValue"
+            android:layout_width="100sp"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/zRotationValue"
+            android:layout_width="100sp"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/Location"
+        android:layout_width="300sp"
+        android:layout_height="100sp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/Staut"
+            android:layout_width="100sp"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/latitude"
+            android:layout_width="100sp"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/longitude"
+            android:layout_width="100sp"
+            android:layout_height="wrap_content" />
+
+
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="300dp"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <ImageView
+            android:id="@+id/imageView5"
+            android:layout_width="match_parent"
+            android:layout_height="123dp"
+            app:srcCompat="@drawable/p1" />
+
+        <ImageView
+            android:id="@+id/imageView4"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:srcCompat="@drawable/p2" />
+    </LinearLayout>
+
+
+</LinearLayout>

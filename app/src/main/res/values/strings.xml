@@ -1,3 +1,15 @@
 <resources>
     <string name="app_name">COPDAI Android Agent</string>
+    <string name="titre_acc">Acceleration m/s^2</string>
+    <string name="x">X</string>
+    <string name="y">Y</string>
+    <string name="z">Z</string>
+    <string name="rotation_text">Rotation en Radian</string>
+    <string name="pitch">Pitch (X)</string>
+    <string name="roll">Roll (Y)</string>
+    <string name="azimuth">Azimuth (-Z)</string>
+    <string name="ang_acc">Angular Acceleration Radian/seconds</string>
+    <string name="gps_location">Location GPS</string>
+    <string name="latitude">Latitude</string>
+    <string name="longitude">Longitude</string>
 </resources>

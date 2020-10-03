@@ -97,8 +97,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             locationListener = new LocationListener() {
                 @Override
                 public void onLocationChanged(@NonNull Location location) {
-                    longitude.setText("Longitude " + location.getLongitude());
-                    latitude.setText("latitude " + location.getLatitude());
+                    longitude.setText(String.valueOf(location.getLongitude()));
+                    latitude.setText(String.valueOf(location.getLatitude()));
 
                 }
             };
@@ -144,22 +144,22 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     public void onSensorChanged(SensorEvent event) {
         Sensor sensor = event.sensor;
         if(sensor.getType()==Sensor.TYPE_ACCELEROMETER){
-            xValue.setText("AccX m/s^2 " + event.values[0]);
-            yValue.setText("AccY m/s^2 " + event.values[1]);
-            zValue.setText("AccZ m/s^2 " + event.values[2]);
+            xValue.setText(String.valueOf(event.values[0]));
+            yValue.setText(String.valueOf(event.values[1]));
+            zValue.setText(String.valueOf(event.values[2]));
             floatAccelerometer = event.values;
 
             SensorManager.getRotationMatrix(floatRotationMatrix, null,floatAccelerometer, floatGeoMagneto);
             SensorManager.getOrientation(floatRotationMatrix, floatOrientation);
 
-            xRotationValue.setText("Azimuth (-Z) Radian " + floatOrientation[0]);
-            yRotationValue.setText("Pitch (X) Radian " + floatOrientation[1]);
-            zRotationValue.setText("Roll (Y) Radian " + floatOrientation[2]);
+            xRotationValue.setText(String.valueOf( floatOrientation[0]));
+            yRotationValue.setText(String.valueOf(floatOrientation[1]));
+            zRotationValue.setText(String.valueOf(floatOrientation[2]));
         }
         else if(sensor.getType()==Sensor.TYPE_GYROSCOPE){
-            xGyroValue.setText("AccAngX Rad/s " + event.values[0]);
-            yGyroValue.setText("AccAngY Rad/s " + event.values[1]);
-            zGyroValue.setText("AccAngZ Rad/s " + event.values[2]);
+            xGyroValue.setText(String.valueOf(event.values[0]));
+            yGyroValue.setText(String.valueOf(event.values[1]));
+            zGyroValue.setText(String.valueOf(event.values[2]));
         }
         else if(sensor.getType()==Sensor.TYPE_MAGNETIC_FIELD){
             floatGeoMagneto=event.values;
@@ -167,9 +167,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             SensorManager.getRotationMatrix(floatRotationMatrix, null,floatAccelerometer, floatGeoMagneto);
             SensorManager.getOrientation(floatRotationMatrix, floatOrientation);
 
-            xRotationValue.setText("Azimuth (-Z) Radian " + floatOrientation[0]);
-            yRotationValue.setText("Pitch (X) Radian " + floatOrientation[1]);
-            zRotationValue.setText("Roll (Y) Radian " + floatOrientation[2]);
+            xRotationValue.setText(String.valueOf(floatOrientation[0]));
+            yRotationValue.setText(String.valueOf(floatOrientation[1]));
+            zRotationValue.setText(String.valueOf(floatOrientation[2]));
         }
 
     }

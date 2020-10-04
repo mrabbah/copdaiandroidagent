@@ -16,29 +16,46 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.view.Display;
+import android.view.WindowManager;
+import android.widget.CompoundButton;
+import android.widget.Switch;
 import android.widget.TextView;
+import android.view.Surface;
 
-
-public class MainActivity extends AppCompatActivity implements SensorEventListener {
+public class MainActivity extends AppCompatActivity implements SensorEventListener, CompoundButton.OnCheckedChangeListener {
 
     private SensorManager sensorManager;
-    private Sensor acceloremeter, gyroscope, magneto;
+    private Sensor mSensorAccelerometer, mSensorGyroscope, mSensorMagnetometer/*, linearAccelerometer*/;
     private LocationManager locationManager;
     private LocationListener locationListener;
-    private float[] floatGeoMagneto = new float[3];
-    private float[] floatAccelerometer = new float[3];
-    private float[] floatOrientation = new float[3];
-    private float[] floatRotationMatrix = new float[9];
+    private float[] mMagnetometerData = new float[3];
+    private float[] mAccelerometerData = new float[3];
+    private float[] mGyroscopeData = new float[3];
     private int delay;
-    TextView xValue, yValue, zValue, xGyroValue, yGyroValue, zGyroValue, xRotationValue, yRotationValue, zRotationValue,latitude,longitude;
+    private int refreshInterval;
+    private long lastUpdate;
+    private boolean convert = false;
 
+    // System display. Need this for determining rotation.
+    private Display mDisplay;
+
+
+    TextView xValue, yValue, zValue, xGyroValue, yGyroValue, zGyroValue, xRotationValue, yRotationValue, zRotationValue,latitude,longitude;
+    Switch switchConversion;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        delay = sensorManager.SENSOR_DELAY_UI;
+        delay = SensorManager.SENSOR_DELAY_NORMAL;
+        refreshInterval = 100; //100ms
+
+        switchConversion = (Switch) findViewById(R.id.switchConversion);
+        switchConversion.setOnCheckedChangeListener(this);
+        convert = switchConversion.isChecked();
+
 
         xValue = (TextView) findViewById(R.id.xValue);
         yValue = (TextView) findViewById(R.id.yValue);
@@ -58,17 +75,18 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 
-        acceloremeter = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
-        magneto = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+        mSensorAccelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        // linearAccelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
+        mSensorGyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+        mSensorMagnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
-        boolean isGPS_enabled = locationManager.isProviderEnabled(locationManager.GPS_PROVIDER);
+        boolean isGPS_enabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
 
 
 
-        if(acceloremeter!=null){
-            sensorManager.registerListener(MainActivity.this,acceloremeter,delay);
+        if(mSensorAccelerometer !=null){
+            sensorManager.registerListener(MainActivity.this, mSensorAccelerometer,delay);
         }
         else{
             xValue.setText("Accelerometer not supported");
@@ -76,8 +94,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             zValue.setText("Accelerometer not supported");
         }
 
-        if(gyroscope!=null){
-            sensorManager.registerListener(MainActivity.this,gyroscope,delay);
+        /*if(linearAccelerometer!=null){
+            sensorManager.registerListener(MainActivity.this,linearAccelerometer, delay);
+        }
+        else{
+            xValue.setText("Accelerometer not supported");
+            yValue.setText("Accelerometer not supported");
+            zValue.setText("Accelerometer not supported");
+        }*/
+
+        if(mSensorGyroscope !=null){
+            sensorManager.registerListener(MainActivity.this, mSensorGyroscope,delay);
         }
         else{
             xGyroValue.setText("Gyroscope not supported");
@@ -85,13 +112,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             zGyroValue.setText("Gyroscope not supported");
         }
 
-        if(magneto!=null){
-            sensorManager.registerListener(MainActivity.this,magneto,delay);
-        }
-        else{
-            xRotationValue.setText("Magneto not supported");
-            yRotationValue.setText("Magneto not supported");
-            zRotationValue.setText("Magneto not supported");
+        if(mSensorGyroscope == null || mSensorAccelerometer == null){
+            xRotationValue.setText("Rotation sensor not available");
+            yRotationValue.setText("Rotation sensor not available");
+            zRotationValue.setText("Rotation sensor not available");
         }
         if(isGPS_enabled){
             locationListener = new LocationListener() {
@@ -112,10 +136,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             try {
                 locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,0,0,locationListener);
             } catch (Exception ex) {
-                longitude.setText("Pb to get location");
+                longitude.setText("Pb to get GPS location");
                 latitude.setText(ex.getMessage());
             }
         }
+
+        // Get the display from the window manager (for rotation).
+        WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
+        mDisplay = wm.getDefaultDisplay();
+
+        lastUpdate = System.currentTimeMillis();
     }
 
     @Override
@@ -141,39 +171,91 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
     @Override
-    public void onSensorChanged(SensorEvent event) {
-        Sensor sensor = event.sensor;
-        if(sensor.getType()==Sensor.TYPE_ACCELEROMETER){
-            xValue.setText(String.valueOf(event.values[0]));
-            yValue.setText(String.valueOf(event.values[1]));
-            zValue.setText(String.valueOf(event.values[2]));
-            floatAccelerometer = event.values;
+    public void onSensorChanged(SensorEvent sensorEvent) {
+        // The sensor type (as defined in the Sensor class).
+        int sensorType = sensorEvent.sensor.getType();
+        long curTime = System.currentTimeMillis();
+        if((curTime - lastUpdate) > refreshInterval) {
+            lastUpdate = curTime;
+            /*if(sensor.getType()==Sensor.TYPE_LINEAR_ACCELERATION) {
+                xValue.setText(String.valueOf(event.values[0]));
+                yValue.setText(String.valueOf(event.values[1]));
+                zValue.setText(String.valueOf(event.values[2]));
+            }
+            */
 
-            SensorManager.getRotationMatrix(floatRotationMatrix, null,floatAccelerometer, floatGeoMagneto);
-            SensorManager.getOrientation(floatRotationMatrix, floatOrientation);
+            switch (sensorType) {
+                case Sensor.TYPE_ACCELEROMETER:
+                    mAccelerometerData = sensorEvent.values.clone();
+                    DeviceAcceleration deviceAcceleration = SensorsUtil.getDeviceAcceleration(mAccelerometerData.clone());
+                    xValue.setText(String.valueOf(deviceAcceleration.x));
+                    yValue.setText(String.valueOf(deviceAcceleration.y));
+                    zValue.setText(String.valueOf(deviceAcceleration.z));
+                    break;
+                case Sensor.TYPE_MAGNETIC_FIELD:
+                    mMagnetometerData = sensorEvent.values.clone();
+                    break;
+                case Sensor.TYPE_GYROSCOPE:
+                    mGyroscopeData = sensorEvent.values.clone();
+                    DeviceAngularAcceleration deviceAngularAcceleration = SensorsUtil.getDeviceAngularAcceleration(mGyroscopeData);
+                    xGyroValue.setText(String.valueOf(deviceAngularAcceleration.x));
+                    yGyroValue.setText(String.valueOf(deviceAngularAcceleration.y));
+                    zGyroValue.setText(String.valueOf(deviceAngularAcceleration.z));
+                    break;
+                default:
+                    return;
+            }
 
-            xRotationValue.setText(String.valueOf( floatOrientation[0]));
-            yRotationValue.setText(String.valueOf(floatOrientation[1]));
-            zRotationValue.setText(String.valueOf(floatOrientation[2]));
+
+            DeviceOrientation deviceOrientation =
+                    SensorsUtil.getDeviceOrientation(mAccelerometerData,
+                            mMagnetometerData,
+                            mDisplay);
+
+            xRotationValue.setText(String.valueOf(deviceOrientation.azimuth));
+            yRotationValue.setText(String.valueOf(deviceOrientation.pitch));
+            zRotationValue.setText(String.valueOf(deviceOrientation.roll));
+
+
         }
-        else if(sensor.getType()==Sensor.TYPE_GYROSCOPE){
-            xGyroValue.setText(String.valueOf(event.values[0]));
-            yGyroValue.setText(String.valueOf(event.values[1]));
-            zGyroValue.setText(String.valueOf(event.values[2]));
-        }
-        else if(sensor.getType()==Sensor.TYPE_MAGNETIC_FIELD){
-            floatGeoMagneto=event.values;
 
-            SensorManager.getRotationMatrix(floatRotationMatrix, null,floatAccelerometer, floatGeoMagneto);
-            SensorManager.getOrientation(floatRotationMatrix, floatOrientation);
 
-            xRotationValue.setText(String.valueOf(floatOrientation[0]));
-            yRotationValue.setText(String.valueOf(floatOrientation[1]));
-            zRotationValue.setText(String.valueOf(floatOrientation[2]));
-        }
 
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        sensorManager.unregisterListener(this);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        sensorManager.registerListener(this, mSensorAccelerometer, delay);
+        // sensorManager.registerListener(this, linearAccelerometer, delay);
+        sensorManager.registerListener(this, mSensorGyroscope, delay);
+        sensorManager.registerListener(this, mSensorMagnetometer, delay);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+        // Unregister all sensor listeners in this callback so they don't
+        // continue to use resources when the app is stopped.
+        sensorManager.unregisterListener(this);
+    }
+
+    @Override
+    public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
+        this.convert = isChecked;
+        if(isChecked) {
+            switchConversion.setText(switchConversion.getTextOn());
+        } else {
+            switchConversion.setText(switchConversion.getTextOff());
+        }
+    }
 
 
 }

@@ -12,4 +12,7 @@
     <string name="gps_location">Location GPS</string>
     <string name="latitude">Latitude</string>
     <string name="longitude">Longitude</string>
+    <string name="switch_txt">Convertir en Degree et Km/h</string>
+    <string name="switch_on"><![CDATA[Used units Radian & m & s]]></string>
+    <string name="switch_off"><![CDATA[Used units Degree & Km & h]]></string>
 </resources>

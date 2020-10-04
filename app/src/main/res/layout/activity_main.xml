@@ -16,6 +16,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -83,18 +84,19 @@
                 android:textAlignment="center" />
 
             <TextView
-                android:id="@+id/zValue"
+                android:id="@+id/yValue"
                 android:layout_width="100sp"
                 android:layout_height="wrap_content"
                 android:layout_weight="0.33"
                 android:textAlignment="center" />
 
             <TextView
-                android:id="@+id/yValue"
+                android:id="@+id/zValue"
                 android:layout_width="100sp"
                 android:layout_height="wrap_content"
                 android:layout_weight="0.33"
                 android:textAlignment="center" />
+
         </LinearLayout>
 
         <LinearLayout
@@ -121,6 +123,16 @@
             android:orientation="horizontal">
 
             <TextView
+                android:id="@+id/textView8"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight=".33"
+                android:text="@string/azimuth"
+                android:textAlignment="center"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
                 android:id="@+id/textView6"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -140,15 +152,6 @@
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/textView8"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight=".33"
-                android:text="@string/azimuth"
-                android:textAlignment="center"
-                android:textSize="18sp"
-                android:textStyle="bold" />
         </LinearLayout>
 
         <LinearLayout
@@ -157,25 +160,26 @@
             android:orientation="horizontal">
 
             <TextView
-                android:id="@+id/zGyroValue"
+                android:id="@+id/xRotationValue"
                 android:layout_width="100sp"
                 android:layout_height="wrap_content"
-                android:layout_weight="0.33"
+                android:layout_weight=".33"
                 android:textAlignment="center" />
 
             <TextView
-                android:id="@+id/yGyroValue"
+                android:id="@+id/yRotationValue"
                 android:layout_width="100sp"
                 android:layout_height="wrap_content"
-                android:layout_weight="0.33"
+                android:layout_weight=".33"
                 android:textAlignment="center" />
 
             <TextView
-                android:id="@+id/xGyroValue"
+                android:id="@+id/zRotationValue"
                 android:layout_width="100sp"
                 android:layout_height="wrap_content"
-                android:layout_weight="0.33"
+                android:layout_weight=".33"
                 android:textAlignment="center" />
+
         </LinearLayout>
 
         <LinearLayout
@@ -188,10 +192,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:background="#E3C17E"
                 android:text="@string/ang_acc"
                 android:textAlignment="center"
                 android:textColor="#3F51B5"
-                android:textSize="24sp" />
+                android:textSize="24sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
         <LinearLayout
@@ -236,25 +242,26 @@
             android:orientation="horizontal">
 
             <TextView
-                android:id="@+id/xRotationValue"
+                android:id="@+id/xGyroValue"
                 android:layout_width="100sp"
                 android:layout_height="wrap_content"
-                android:layout_weight=".33"
+                android:layout_weight="0.33"
                 android:textAlignment="center" />
 
             <TextView
-                android:id="@+id/yRotationValue"
+                android:id="@+id/yGyroValue"
                 android:layout_width="100sp"
                 android:layout_height="wrap_content"
-                android:layout_weight=".33"
+                android:layout_weight="0.33"
                 android:textAlignment="center" />
 
             <TextView
-                android:id="@+id/zRotationValue"
+                android:id="@+id/zGyroValue"
                 android:layout_width="100sp"
                 android:layout_height="wrap_content"
-                android:layout_weight=".33"
+                android:layout_weight="0.33"
                 android:textAlignment="center" />
+
         </LinearLayout>
 
         <LinearLayout
@@ -305,20 +312,38 @@
             android:orientation="horizontal">
 
             <TextView
-                android:id="@+id/longitude"
+                android:id="@+id/latitude"
                 android:layout_width="100sp"
                 android:layout_height="wrap_content"
                 android:layout_weight="0.5"
                 android:textAlignment="center" />
 
             <TextView
-                android:id="@+id/latitude"
+                android:id="@+id/longitude"
                 android:layout_width="100sp"
                 android:layout_height="wrap_content"
                 android:layout_weight="0.5"
                 android:textAlignment="center" />
+
         </LinearLayout>
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#FFEF86"
+            android:orientation="horizontal">
+
+            <Switch
+                android:id="@+id/switchConversion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:checked="true"
+                android:text="@string/switch_on"
+                android:textOff="@string/switch_off"
+                android:textOn="@string/switch_on"
+                android:textStyle="bold" />
+        </LinearLayout>
     </LinearLayout>
 
     <ImageView

@@ -3,11 +3,24 @@
     package="org.copdai.android.sensors.agent">
 
 
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" android:required="true"/>
+    <uses-permission android:name="android.permission.ACCESS_LOCATION_EXTRA_COMMANDS" android:required="true"/>
     <uses-feature android:name="android.hardware.sensor.accelerometer"
-        android:required="true" />"
+        android:required="true" />
     <uses-feature android:name="android.hardware.sensor.gyroscope"
-        android:required="true" />"
+        android:required="true" />
+    <uses-permission android:name="android.permission.INTERNET" android:required="true"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" android:required="true"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK" android:required="true"/>
+    <uses-permission android:name="android.permission.BLUETOOTH" android:required="true"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:required="true"/>
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" android:required="true" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" android:required="true"/>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" android:required="true"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" android:required="true"/>
+    <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" android:required="true"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" android:required="true"/>
+
 
 
 
@@ -25,6 +38,22 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <receiver android:name=".BootReceiver" android:enabled="true"
+            android:directBootAware="true" android:exported="true">
+            <intent-filter android:priority="2147483647">
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+        <receiver android:name=".HealthCheckAgent"
+            android:enabled="true" android:exported="true">
+            <intent-filter android:priority="2147483646">
+                <action android:name="org.copdai.android.sensors.agent"/>
+            </intent-filter>
+        </receiver>
+        <service android:name = ".GpsAgent"/>
+        <service android:name=".AccelerometerAgent"/>
     </application>
 
 </manifest>

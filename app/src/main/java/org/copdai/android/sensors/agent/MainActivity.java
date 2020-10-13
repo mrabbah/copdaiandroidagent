@@ -6,7 +6,11 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -16,6 +20,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
 import android.widget.CompoundButton;
@@ -29,6 +34,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private Sensor mSensorAccelerometer, mSensorGyroscope, mSensorMagnetometer/*, linearAccelerometer*/;
     private LocationManager locationManager;
     private LocationListener locationListener;
+    private BootReceiver bootReceiver;
     private float[] mMagnetometerData = new float[3];
     private float[] mAccelerometerData = new float[3];
     private float[] mGyroscopeData = new float[3];
@@ -36,6 +42,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private int refreshInterval;
     private long lastUpdate;
     private boolean convert = false;
+    final String TAG = "MainActivity";
 
     // System display. Need this for determining rotation.
     private Display mDisplay;
@@ -146,6 +153,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         mDisplay = wm.getDefaultDisplay();
 
         lastUpdate = System.currentTimeMillis();
+        
+        startHealthCheckerAgent();
+        // startBootReceiver();
     }
 
     @Override
@@ -241,10 +251,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     protected void onStop() {
         super.onStop();
-
         // Unregister all sensor listeners in this callback so they don't
         // continue to use resources when the app is stopped.
         sensorManager.unregisterListener(this);
+        // unregisterReceiver(bootReceiver);
     }
 
     @Override
@@ -258,4 +268,26 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
 
+
+    private void startHealthCheckerAgent() {
+        Intent healthCheckerIntent = new Intent(this, HealthCheckAgent.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, healthCheckerIntent, 0);
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        if(pendingIntent == null) {
+            Log.e(TAG, "pendingIntent is null");
+        }
+        if(alarmManager == null) {
+            Log.e(TAG, "alarmManager is null");
+        }
+        if (pendingIntent != null && alarmManager != null) {
+            Log.i(TAG, "Starting Health checker agent");
+            alarmManager.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                    100, 1 * 60 * 1000, pendingIntent);
+        }
+    }
+
+    private void startBootReceiver() {
+        bootReceiver = new BootReceiver();
+        registerReceiver(bootReceiver, new IntentFilter(Intent.ACTION_SCREEN_ON));
+    }
 }

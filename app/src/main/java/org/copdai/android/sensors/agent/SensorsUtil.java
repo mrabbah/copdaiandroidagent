@@ -111,4 +111,48 @@ public class SensorsUtil {
         return deviceOrientation;
     }
 
+    public static DeviceOrientation getDeviceOrientation(float[] mAccelerometerData,
+                                                         float[] mMagnetometerData) {
+        // Compute the rotation matrix: merges and translates the data
+        // from the accelerometer and magnetometer, in the device coordinate
+        // system, into a matrix in the world's coordinate system.
+        //
+        // The second argument is an inclination matrix, which isn't
+        // used in this example.
+        float[] rotationMatrix = new float[9];
+        boolean rotationOK = SensorManager.getRotationMatrix(rotationMatrix,
+                null, mAccelerometerData, mMagnetometerData);
+
+        // Remap the matrix based on current device/activity rotation.
+        float[] rotationMatrixAdjusted = new float[9];
+        rotationMatrixAdjusted = rotationMatrix.clone();
+
+        // Get the orientation of the device (azimuth, pitch, roll) based
+        // on the rotation matrix. Output units are radians.
+        float orientationValues[] = new float[3];
+        if (rotationOK) {
+            SensorManager.getOrientation(rotationMatrixAdjusted,
+                    orientationValues);
+        }
+
+        // Pull out the individual values from the array.
+        float azimuth = orientationValues[0];
+        float pitch = orientationValues[1];
+        float roll = orientationValues[2];
+
+        // Pitch and roll values that are close to but not 0 cause the
+        // animation to flash a lot. Adjust pitch and roll to 0 for very
+        // small values (as defined by VALUE_DRIFT).
+        if (Math.abs(pitch) < ANGULAR_VALUE_DRIFT) {
+            pitch = 0;
+        }
+        if (Math.abs(roll) < ANGULAR_VALUE_DRIFT) {
+            roll = 0;
+        }
+        DeviceOrientation deviceOrientation = new DeviceOrientation();
+        deviceOrientation.azimuth = azimuth;
+        deviceOrientation.pitch = pitch;
+        deviceOrientation.roll = roll;
+        return deviceOrientation;
+    }
 }

@@ -83,7 +83,7 @@ public class AccelerometerAgent extends Service implements SensorEventListener  
             switch (sensorType) {
                 case Sensor.TYPE_ACCELEROMETER:
                     mAccelerometerData = sensorEvent.values.clone();
-                    DeviceAcceleration deviceAcceleration = SensorsUtil.getDeviceAcceleration(mAccelerometerData.clone());
+                    DeviceAcceleration deviceAcceleration = SensorsUtil.getDeviceAcceleration(mAccelerometerData.clone(), 0f, 0f, 0f);
                     Log.i(TAG, "acceleration m/s^2: x = " + String.valueOf(deviceAcceleration.x)
                             + " y = " + String.valueOf(deviceAcceleration.y) + " z = " + String.valueOf(deviceAcceleration.z));
                     break;
@@ -92,7 +92,7 @@ public class AccelerometerAgent extends Service implements SensorEventListener  
                     break;
                 case Sensor.TYPE_GYROSCOPE:
                     mGyroscopeData = sensorEvent.values.clone();
-                    DeviceAngularAcceleration deviceAngularAcceleration = SensorsUtil.getDeviceAngularAcceleration(mGyroscopeData);
+                    DeviceAngularAcceleration deviceAngularAcceleration = SensorsUtil.getDeviceAngularAcceleration(mGyroscopeData, 0f, 0f, 0f);
                     Log.i(TAG, "acc angular radian/s: x = " + String.valueOf(deviceAngularAcceleration.x)
                             + " y = " + String.valueOf(deviceAngularAcceleration.y) + " z = " + String.valueOf(deviceAngularAcceleration.z));
                     break;
@@ -103,7 +103,7 @@ public class AccelerometerAgent extends Service implements SensorEventListener  
 
             DeviceOrientation deviceOrientation =
                     SensorsUtil.getDeviceOrientation(mAccelerometerData,
-                            mMagnetometerData);
+                            mMagnetometerData, 0f, 0f, 0f);
             Log.i(TAG, "rotation radian : azimuth = " + String.valueOf(deviceOrientation.azimuth)
                     + " pitch = " + String.valueOf(deviceOrientation.pitch) + " roll = " + String.valueOf(deviceOrientation.roll));
 

@@ -7,8 +7,11 @@ import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.app.AlarmManager;
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.PendingIntent;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
@@ -28,7 +31,11 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.view.Surface;
 
-public class MainActivity extends AppCompatActivity implements SensorEventListener, CompoundButton.OnCheckedChangeListener {
+import java.util.Timer;
+import java.util.TimerTask;
+
+public class MainActivity extends AppCompatActivity implements
+        SensorEventListener, CompoundButton.OnCheckedChangeListener, DialogInterface.OnClickListener {
 
     private SensorManager sensorManager;
     private Sensor mSensorAccelerometer, mSensorGyroscope, mSensorMagnetometer/*, linearAccelerometer*/;
@@ -40,13 +47,33 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private float[] mGyroscopeData = new float[3];
     private int delay;
     private int refreshInterval;
+    private int calibrationInterval;
     private long lastUpdate;
     private boolean convert = false;
     final String TAG = "MainActivity";
+    private boolean calibrationPassed = false;
 
+    private float ACC_VALUE_DRIFT_X = 0f;
+    private float ACC_VALUE_DRIFT_Y = 0f;
+    private float ACC_VALUE_DRIFT_Z = 0f;
+
+    private float ANGULAR_VALUE_DRIFT_X = 0f;
+    private float ANGULAR_VALUE_DRIFT_Y = 0f;
+    private float ANGULAR_VALUE_DRIFT_Z = 0f;
+
+    private float ACC_ANGULAR_VALUE_DRIFT_PITCH = 0f;
+    private float ACC_ANGULAR_VALUE_DRIFT_ROLL = 0f;
+    private float ACC_ANGULAR_VALUE_DRIFT_AZIMUTH = 0f;
+
+    private float ORIENTATION_INIT_PITCH = 10f;
+    private float ORIENTATION_INIT_ROLL = 10f;
+    private float ORIENTATION_INIT_AZIMUTH = 10f;
+
+    private boolean startCalibration = false;
     // System display. Need this for determining rotation.
     private Display mDisplay;
 
+    private final float errorRange = 1.1f;
 
     TextView xValue, yValue, zValue, xGyroValue, yGyroValue, zGyroValue, xRotationValue, yRotationValue, zRotationValue,latitude,longitude;
     Switch switchConversion;
@@ -57,7 +84,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         setContentView(R.layout.activity_main);
 
         delay = SensorManager.SENSOR_DELAY_NORMAL;
-        refreshInterval = 100; //100ms
+        refreshInterval = 10; //100ms
+        calibrationInterval = 30000; // 10 second
 
         switchConversion = (Switch) findViewById(R.id.switchConversion);
         switchConversion.setOnCheckedChangeListener(this);
@@ -154,8 +182,46 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         lastUpdate = System.currentTimeMillis();
         
-        startHealthCheckerAgent();
+        // startHealthCheckerAgent();
         // startBootReceiver();
+        calibrate();
+    }
+
+    public void calibrate() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Demande Calibration");
+        builder.setMessage("Veuillez déposer le téléphone sur une surface plate pour calibrage");
+        builder.setCancelable(false);
+        builder.setPositiveButton("OK",  this);
+        // builder.setNeutralButton("OK", this);
+
+
+        AlertDialog dlg = builder.create();
+
+        dlg.show();
+
+    }
+
+    @Override
+    public void onClick(DialogInterface dialog, int which) {
+        Log.i(TAG, "Starting calibration");
+        lastUpdate = System.currentTimeMillis();
+        startCalibration = true;
+        final Timer t = new Timer();
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Calibration en cours");
+        builder.setMessage("Merci de patienter durant " + calibrationInterval / 1000 + " seconds...");
+        builder.setCancelable(false);
+        final AlertDialog dlg = builder.create();
+        dlg.show();
+
+        t.schedule(new TimerTask() {
+            public void run() {
+                dlg.dismiss(); // when the task active then close the dialog
+                t.cancel(); // also just top the timer thread, otherwise, you may receive a crash report
+            }
+        }, calibrationInterval); // after 2 second (or 2000 miliseconds), the task will be active.
     }
 
     @Override
@@ -182,11 +248,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
-        // The sensor type (as defined in the Sensor class).
-        int sensorType = sensorEvent.sensor.getType();
         long curTime = System.currentTimeMillis();
-        if((curTime - lastUpdate) > refreshInterval) {
-            lastUpdate = curTime;
+        if(calibrationPassed) {
+            // The sensor type (as defined in the Sensor class).
+            int sensorType = sensorEvent.sensor.getType();
+
+            if((curTime - lastUpdate) > refreshInterval) {
+                lastUpdate = curTime;
             /*if(sensor.getType()==Sensor.TYPE_LINEAR_ACCELERATION) {
                 xValue.setText(String.valueOf(event.values[0]));
                 yValue.setText(String.valueOf(event.values[1]));
@@ -194,40 +262,132 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
             */
 
-            switch (sensorType) {
-                case Sensor.TYPE_ACCELEROMETER:
-                    mAccelerometerData = sensorEvent.values.clone();
-                    DeviceAcceleration deviceAcceleration = SensorsUtil.getDeviceAcceleration(mAccelerometerData.clone());
-                    xValue.setText(String.valueOf(deviceAcceleration.x));
-                    yValue.setText(String.valueOf(deviceAcceleration.y));
-                    zValue.setText(String.valueOf(deviceAcceleration.z));
-                    break;
-                case Sensor.TYPE_MAGNETIC_FIELD:
-                    mMagnetometerData = sensorEvent.values.clone();
-                    break;
-                case Sensor.TYPE_GYROSCOPE:
-                    mGyroscopeData = sensorEvent.values.clone();
-                    DeviceAngularAcceleration deviceAngularAcceleration = SensorsUtil.getDeviceAngularAcceleration(mGyroscopeData);
-                    xGyroValue.setText(String.valueOf(deviceAngularAcceleration.x));
-                    yGyroValue.setText(String.valueOf(deviceAngularAcceleration.y));
-                    zGyroValue.setText(String.valueOf(deviceAngularAcceleration.z));
-                    break;
-                default:
-                    return;
+                switch (sensorType) {
+                    case Sensor.TYPE_ACCELEROMETER:
+                        mAccelerometerData = sensorEvent.values.clone();
+                        DeviceAcceleration deviceAcceleration = SensorsUtil.getDeviceAcceleration(mAccelerometerData.clone(),ACC_VALUE_DRIFT_X,ACC_VALUE_DRIFT_Y,ACC_VALUE_DRIFT_Z);
+                        xValue.setText(String.valueOf(deviceAcceleration.x));
+                        yValue.setText(String.valueOf(deviceAcceleration.y));
+                        zValue.setText(String.valueOf(deviceAcceleration.z));
+                        break;
+                    case Sensor.TYPE_MAGNETIC_FIELD:
+                        mMagnetometerData = sensorEvent.values.clone();
+                        break;
+                    case Sensor.TYPE_GYROSCOPE:
+                        mGyroscopeData = sensorEvent.values.clone();
+                        DeviceAngularAcceleration deviceAngularAcceleration = SensorsUtil.getDeviceAngularAcceleration(mGyroscopeData,ANGULAR_VALUE_DRIFT_X,ANGULAR_VALUE_DRIFT_Y,ANGULAR_VALUE_DRIFT_Z);
+                        xGyroValue.setText(String.valueOf(deviceAngularAcceleration.x));
+                        yGyroValue.setText(String.valueOf(deviceAngularAcceleration.y));
+                        zGyroValue.setText(String.valueOf(deviceAngularAcceleration.z));
+                        break;
+                    default:
+                        return;
+                }
+
+
+                DeviceOrientation deviceOrientation =
+                        SensorsUtil.getDeviceOrientation(mAccelerometerData,
+                                mMagnetometerData,
+                                mDisplay,ACC_ANGULAR_VALUE_DRIFT_AZIMUTH,ACC_ANGULAR_VALUE_DRIFT_PITCH,ACC_ANGULAR_VALUE_DRIFT_ROLL);
+
+                xRotationValue.setText(String.valueOf(deviceOrientation.azimuth));
+                yRotationValue.setText(String.valueOf(deviceOrientation.pitch));
+                zRotationValue.setText(String.valueOf(deviceOrientation.roll));
+
+
+            }
+        } else if(startCalibration){
+
+            if((curTime - lastUpdate) < calibrationInterval) {
+                // The sensor type (as defined in the Sensor class).
+                int sensorType = sensorEvent.sensor.getType();
+                switch (sensorType) {
+                    case Sensor.TYPE_ACCELEROMETER:
+                        mAccelerometerData = sensorEvent.values.clone();
+                        DeviceAcceleration deviceAcceleration = SensorsUtil.getStandardDeviceAcceleration(mAccelerometerData.clone());
+                        if(Math.abs(deviceAcceleration.x) > ACC_VALUE_DRIFT_X) {
+                            ACC_VALUE_DRIFT_X = Math.abs(deviceAcceleration.x);
+                        }
+                        if(Math.abs(deviceAcceleration.y) > ACC_VALUE_DRIFT_Y) {
+                            ACC_VALUE_DRIFT_Y = Math.abs(deviceAcceleration.y);
+                        }
+                        if(Math.abs(deviceAcceleration.z) > ACC_VALUE_DRIFT_Z) {
+                            ACC_VALUE_DRIFT_Z = Math.abs(deviceAcceleration.z);
+                        }
+                        break;
+                    case Sensor.TYPE_MAGNETIC_FIELD:
+                        mMagnetometerData = sensorEvent.values.clone();
+                        break;
+                    case Sensor.TYPE_GYROSCOPE:
+                        mGyroscopeData = sensorEvent.values.clone();
+                        DeviceAngularAcceleration deviceAngularAcceleration = SensorsUtil.getStandardDeviceAngularAcceleration(mGyroscopeData);
+                        if(Math.abs(deviceAngularAcceleration.x) > ANGULAR_VALUE_DRIFT_X) {
+                            ANGULAR_VALUE_DRIFT_X = Math.abs(deviceAngularAcceleration.x);
+                        }
+                        if(Math.abs(deviceAngularAcceleration.y) > ANGULAR_VALUE_DRIFT_Y) {
+                            ANGULAR_VALUE_DRIFT_Y = Math.abs(deviceAngularAcceleration.y);
+                        }
+                        if(Math.abs(deviceAngularAcceleration.z) > ANGULAR_VALUE_DRIFT_Z) {
+                            ANGULAR_VALUE_DRIFT_Z = Math.abs(deviceAngularAcceleration.z);
+                        }
+                        break;
+                    default:
+                        return;
+                }
+
+
+                DeviceOrientation deviceOrientation =
+                        SensorsUtil.getStandardDeviceOrientation(mAccelerometerData,
+                                mMagnetometerData,
+                                mDisplay);
+
+                if(ORIENTATION_INIT_AZIMUTH == 10f || ORIENTATION_INIT_PITCH == 10f ||
+                        ORIENTATION_INIT_ROLL == 10f ) {
+                    ORIENTATION_INIT_AZIMUTH = deviceOrientation.azimuth;
+                    ORIENTATION_INIT_PITCH = deviceOrientation.pitch;
+                    ORIENTATION_INIT_ROLL = deviceOrientation.roll;
+                } else {
+                    float delta_azimuth = Math.abs(ORIENTATION_INIT_AZIMUTH - deviceOrientation.azimuth);
+                    float delta_pitch = Math.abs(ORIENTATION_INIT_PITCH - deviceOrientation.pitch);
+                    float delta_roll = Math.abs(ORIENTATION_INIT_ROLL - deviceOrientation.roll);
+                    if(ACC_ANGULAR_VALUE_DRIFT_AZIMUTH < delta_azimuth) {
+                        ACC_ANGULAR_VALUE_DRIFT_AZIMUTH = delta_azimuth;
+                    }
+                    if(ACC_ANGULAR_VALUE_DRIFT_PITCH < delta_pitch) {
+                        ACC_ANGULAR_VALUE_DRIFT_PITCH = delta_pitch;
+                    }
+                    if(ACC_ANGULAR_VALUE_DRIFT_ROLL < delta_roll) {
+                        ACC_ANGULAR_VALUE_DRIFT_ROLL = delta_roll;
+                    }
+                }
+            }
+
+            if((curTime - lastUpdate) >= calibrationInterval) {
+                calibrationPassed = true;
+                ACC_VALUE_DRIFT_X = ACC_VALUE_DRIFT_X * errorRange;
+                ACC_VALUE_DRIFT_Y = ACC_VALUE_DRIFT_Y * errorRange;
+                ACC_VALUE_DRIFT_Z = ACC_VALUE_DRIFT_Z * errorRange;
+
+                ANGULAR_VALUE_DRIFT_X = ANGULAR_VALUE_DRIFT_X * errorRange;
+                ANGULAR_VALUE_DRIFT_Y = ANGULAR_VALUE_DRIFT_Y * errorRange;
+                ANGULAR_VALUE_DRIFT_Z = ANGULAR_VALUE_DRIFT_Z * errorRange;
+
+                ACC_ANGULAR_VALUE_DRIFT_AZIMUTH = ACC_ANGULAR_VALUE_DRIFT_AZIMUTH * errorRange;
+                ACC_ANGULAR_VALUE_DRIFT_PITCH = ACC_ANGULAR_VALUE_DRIFT_PITCH * errorRange;
+                ACC_ANGULAR_VALUE_DRIFT_ROLL = ACC_ANGULAR_VALUE_DRIFT_ROLL * errorRange;
+
+
+                Log.i(TAG, "ACC CALIBRATION = [" + ACC_VALUE_DRIFT_X + ", " + ACC_VALUE_DRIFT_Y + ", " +
+                        ACC_VALUE_DRIFT_Z + "]");
+                Log.i(TAG, "ANG ACC CALIBRATION = [" + ANGULAR_VALUE_DRIFT_X + ", " + ANGULAR_VALUE_DRIFT_Y + ", " +
+                        ANGULAR_VALUE_DRIFT_Z + "]");
+                Log.i(TAG, "ACC CALIBRATION = [" + ACC_ANGULAR_VALUE_DRIFT_AZIMUTH + ", " + ACC_ANGULAR_VALUE_DRIFT_PITCH + ", " +
+                        ACC_ANGULAR_VALUE_DRIFT_ROLL + "]");
             }
 
 
-            DeviceOrientation deviceOrientation =
-                    SensorsUtil.getDeviceOrientation(mAccelerometerData,
-                            mMagnetometerData,
-                            mDisplay);
-
-            xRotationValue.setText(String.valueOf(deviceOrientation.azimuth));
-            yRotationValue.setText(String.valueOf(deviceOrientation.pitch));
-            zRotationValue.setText(String.valueOf(deviceOrientation.roll));
-
-
         }
+
 
 
 
@@ -290,4 +450,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         bootReceiver = new BootReceiver();
         registerReceiver(bootReceiver, new IntentFilter(Intent.ACTION_SCREEN_ON));
     }
+
+
 }
